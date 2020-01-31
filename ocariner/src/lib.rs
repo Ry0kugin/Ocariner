@@ -1,5 +1,7 @@
 use std::error::Error;
 use std::str;
+use rand;
+use noise::{NoiseFn, Perlin};
 
 pub enum BoxDrawing{
     Vertical,
@@ -51,6 +53,16 @@ impl Dimension{
     }
 }
 
+pub fn generate_perlin(size: usize) -> Vec<f64> {
+    let perlin = Perlin::new();
+    let ran_y = rand::random();
+    let mut values: Vec<f64> = Vec::with_capacity(size);
+    for i in 0..size {
+        values.push(perlin.get([(i as f64)*0.05, ran_y]))
+    };
+    values
+}
+
 pub struct OcTable {
     lines: Vec<u8>,
     dimension: Dimension,
@@ -58,7 +70,11 @@ pub struct OcTable {
 
 impl OcTable{
     pub fn new() -> OcTable {
-        OcTable{lines: vec![1,3,5,7,9], dimension: Dimension::new(65,15)}
+        OcTable{
+            lines: vec![1,3,5,7,9],
+            dimension: Dimension::new(65,15),
+            
+        }
     }
 
     pub fn render(&self) -> Result<(), Box<dyn Error>>{
@@ -119,6 +135,25 @@ mod tests {
 
         assert!(ocarina.render().is_ok());
     }
-   
+
+    #[test]
+    fn generate_10_perlin_value() {
+        let perlins = generate_perlin(10);
+        assert_eq!(perlins.len(), 10);  
+    }
+
+    #[test]
+    fn generate_34_perlin_value() {
+        let perlins = generate_perlin(34);
+        assert_ne!(perlins.len(), 10);
+    }
+
+    #[test]
+    fn generate_perlin_in_valid_range() {
+        let perlins = generate_perlin(24);
+        assert!(perlins.iter().all(|&v| (v >= -1f64 || v <= 1f64)));
+    }
+    
+
 }
 
