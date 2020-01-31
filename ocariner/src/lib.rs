@@ -66,16 +66,22 @@ pub fn generate_perlin(size: usize) -> Vec<f64> {
 pub struct OcTable {
     lines: Vec<u8>,
     dimension: Dimension,
-    // notes: Vec<u8>
+    notes: Vec<u8>,
 }
 
 impl OcTable{
     pub fn new() -> OcTable {
+        let notes_len = 12;
         OcTable{
             lines: vec![1,3,5,7,9],
             dimension: Dimension::new(65,15),
-            
+            notes: Vec::with_capacity(notes_len),
         }
+    }
+
+    pub fn generate_notes(&mut self) {
+        let notes = generate_perlin(12);
+        self.notes = notes.iter().map(|&v| ((v+1f64)*6.5f64) as u8).collect();
     }
 
     pub fn render(&self) -> Result<(), Box<dyn Error>>{
@@ -156,9 +162,11 @@ mod tests {
     }
     
     #[test]
-    fn generate_16_notes() {
-        let oc = OcTable::new();
-        oc.generate_notes(vec![0.3345987659, 0.4756790987, 0.6567890987])
+    fn generate_12_notes() {
+        let mut oc = OcTable::new();
+        oc.generate_notes();
+        assert!(oc.notes.iter().all(|&v| (v < 13u8)));
+        assert_eq!(oc.notes.len(), 12)
     }
 }
 
