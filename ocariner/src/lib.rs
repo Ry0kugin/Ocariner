@@ -66,6 +66,7 @@ pub fn generate_perlin(size: usize) -> Vec<f64> {
 pub struct OcTable {
     lines: Vec<u8>,
     dimension: Dimension,
+    // notes: Vec<u8>
 }
 
 impl OcTable{
@@ -154,6 +155,10 @@ mod tests {
         assert!(perlins.iter().all(|&v| (v >= -1f64 || v <= 1f64)));
     }
     
-
+    #[test]
+    fn generate_16_notes() {
+        let oc = OcTable::new();
+        oc.generate_notes(vec![0.3345987659, 0.4756790987, 0.6567890987])
+    }
 }
 
