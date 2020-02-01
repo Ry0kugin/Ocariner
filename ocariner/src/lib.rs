@@ -58,7 +58,7 @@ pub fn generate_perlin(size: usize) -> Vec<f64> {
     let ran_y = rand::random();
     let mut values: Vec<f64> = Vec::with_capacity(size);
     for i in 0..size {
-        values.push(perlin.get([(i as f64)*0.05, ran_y]))
+        values.push(perlin.get([(i as f64)*0.3, ran_y]))
     };
     values
 }
@@ -71,7 +71,7 @@ pub struct OcTable {
 
 impl OcTable{
     pub fn new() -> OcTable {
-        let notes_len = 12;
+        let notes_len = 16;
         OcTable{
             lines: vec![1,3,5,7,9],
             dimension: Dimension::new(65,15),
@@ -80,15 +80,25 @@ impl OcTable{
     }
 
     pub fn generate_notes(&mut self) {
-        let notes = generate_perlin(12);
+        let notes = generate_perlin(16);
         self.notes = notes.iter().map(|&v| ((v+1f64)*6.5f64) as u8).collect();
     }
 
     pub fn render(&self) -> Result<(), Box<dyn Error>>{
         let mut draw: BoxDrawing;
+        let mut draw_note: bool; 
+        let mut note_ct = 0;
         for row in 0..self.dimension.height {
-            for column in 0..self.dimension.width {
-                draw = if self.lines.contains(&row){
+            let notes: Vec<usize> = self.notes.iter()
+                .enumerate()
+                .filter(|(_, &note)| note == row)
+                .map(|(i,_)| i)
+                .collect();
+            for column in 0..self.dimension.width{
+                draw_note = ((column as i8)%4)-2==0;
+                draw = if draw_note && notes.contains(&note_ct) {
+                    BoxDrawing::MusicalNote
+                } else if self.lines.contains(&row){
                     if column==0{
                         BoxDrawing::JunctionRight
                     }else if column==self.dimension.width-1{
@@ -105,10 +115,11 @@ impl OcTable{
                         BoxDrawing::Void
                     }
                 };
-            
+                if draw_note {note_ct+=1}
                 print!("{}", draw.get_utf8()); 
             }
             println!();
+            note_ct = 0
         }
         println!("\n");
         Ok(())
