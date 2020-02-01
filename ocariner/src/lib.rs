@@ -173,11 +173,11 @@ mod tests {
     }
     
     #[test]
-    fn generate_12_notes() {
+    fn generate_16_notes() {
         let mut oc = OcTable::new();
         oc.generate_notes();
         assert!(oc.notes.iter().all(|&v| (v < 13u8)));
-        assert_eq!(oc.notes.len(), 12)
+        assert_eq!(oc.notes.len(), 16)
     }
 }
 
