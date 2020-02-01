@@ -1,9 +1,15 @@
-use std::error::Error;
-use std::str;
+use std::{
+    str,
+    io,
+    io::Write,
+    thread,
+    error::Error,
+    time::Duration
+};
 use rand;
 use noise::{NoiseFn, Perlin};
 
-pub enum BoxDrawing{
+pub enum BoxDrawing {
     Vertical,
     Horizontal,
     Topleft,
@@ -42,6 +48,25 @@ impl BoxDrawing {
     }
 }
 
+pub enum Arrow {
+    UpArrow,
+    UpArrowDouble,
+    UpArrowFilled,
+}
+
+impl Arrow {
+    pub fn get_utf8(&self) -> String {
+        let arrow = match self {
+            Arrow::UpArrow => vec![0xe2,0x86,0x91],
+            Arrow::UpArrowDouble => vec![0xe2,0x87,0x91],
+            Arrow::UpArrowFilled => vec![0xe2,0xac,0x86],
+        };
+
+        let drawing = str::from_utf8(&arrow).expect("UTF 8 have some trouble!");
+        drawing.to_owned()
+    }
+}
+
 struct Dimension {
     width: u8,
     height: u8
@@ -67,15 +92,17 @@ pub struct OcTable {
     lines: Vec<u8>,
     dimension: Dimension,
     notes: Vec<u8>,
+    tempo: f32,
 }
 
 impl OcTable{
-    pub fn new() -> OcTable {
+    pub fn new(tempo: f32) -> OcTable {
         let notes_len = 16;
         OcTable{
             lines: vec![1,3,5,7,9],
             dimension: Dimension::new(65,15),
             notes: Vec::with_capacity(notes_len),
+            tempo
         }
     }
 
@@ -121,7 +148,18 @@ impl OcTable{
             println!();
             note_ct = 0
         }
-        println!("\n");
+        Ok(())
+    }
+
+    pub fn run(&mut self) -> Result<(), Box<dyn Error>> {
+        self.generate_notes();
+        self.render()?;
+        for i in 0..self.notes.len(){
+            let progression = format!("{}{}", " ".repeat(2+4*i), Arrow::UpArrowFilled.get_utf8());
+            print!("{}\x0d\x07", progression);
+            io::stdout().flush().unwrap();
+            thread::sleep(Duration::from_secs_f32(self.tempo));
+        } 
         Ok(())
     }
 }
@@ -148,8 +186,22 @@ mod tests {
     }
 
     #[test]
+    fn drawing_up_arrow_double() {
+        let left = Arrow::UpArrowDouble.get_utf8();
+        let right = str::from_utf8(&[0xe2,0x87,0x91]).unwrap();
+        assert_eq!(left, right);
+    }
+
+    #[test]
+    fn drawing_up_arrow_instead_up_arrow_filled() {
+        let left = Arrow::UpArrow.get_utf8();
+        let right = str::from_utf8(&[0xe2,0xac,0x86]).unwrap();
+        assert_ne!(left, right);
+    }
+
+    #[test]
     fn table_drawed() {
-        let ocarina = OcTable::new();
+        let ocarina = OcTable::new(0.8);
 
         assert!(ocarina.render().is_ok());
     }
@@ -174,10 +226,16 @@ mod tests {
     
     #[test]
     fn generate_16_notes() {
-        let mut oc = OcTable::new();
+        let mut oc = OcTable::new(0.6);
         oc.generate_notes();
         assert!(oc.notes.iter().all(|&v| (v < 13u8)));
         assert_eq!(oc.notes.len(), 16)
+    }
+
+    #[test]
+    fn run_table() {
+        let mut oc = OcTable::new(0.01);
+        assert!(oc.run().is_ok());
     }
 }
 
