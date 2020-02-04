@@ -157,13 +157,171 @@ impl OcTable{
         for i in 0..self.notes.len(){
             let progression = format!("{}{}", " ".repeat(2+4*i), Arrow::UpArrowFilled.get_utf8());
             print!("{}\x0d\x07", progression);
-            io::stdout().flush().unwrap();
+            io::stdout().flush().expect("flushing failed");
             thread::sleep(Duration::from_secs_f32(self.tempo));
         } 
         Ok(())
     }
 }
 
+pub struct Config {
+    tempo: f32,
+    difficulty: u8,
+    wait: u8,
+    notes: (u8,u8),
+    ascii: bool,
+    series: u8,
+    measures: u8,
+    time_per_measures: u8
+}
+
+impl Config {
+    pub fn new(args: std::env::Args) -> Result<Config, &'static str> {
+        let args: Vec<String> = args.collect();
+        let mut tempo: f32 = 0.6;
+        let mut difficulty: u8 = 3;
+        let mut wait: u8 = 4;
+        let     notes: (u8,u8) = (0,12);
+        let mut ascii: bool = false;
+        let mut series: u8 = 0;
+        let mut measures: u8 = 4;
+        let mut time_per_measures: u8 = 4;
+
+        if args.len() == 1 {
+            return Ok(Config{tempo, difficulty, wait, notes, ascii, series, measures, time_per_measures}) 
+        }else if args.len() > 16 {
+            return Err("Error parsing arguments: too much arguments")
+        } else if args[1].clone() == "-h" || args[1].clone() == "--help" {
+            return Err("HELP!!")
+        } else {
+            let mut iterator = args.iter();
+            iterator.next();
+            for _ in 0..args.len()-1 {
+                match iterator.next() {
+                    Some(arg) => {
+                        if arg == "-t" || arg == "--tempo" {
+                            match iterator.next() {
+                                Some(value) => {
+                                    tempo = match value.trim().parse() {
+                                        Ok(num) => {
+                                            if num >= 0.3 && num <= 1.5 {
+                                                num
+                                            } else {
+                                                return Err("Error parsing argument: -t must be between 0.3 and 1.5")
+                                            }
+                                        }
+                                        Err(_) => return Err("Error parsing argument: invalid argument"),
+                                    };
+                                },
+                                None => return Err("Error parsing argument: Not enough argument")
+                            }
+                        } else 
+                        if arg == "-d" || arg == "--difficulty" {
+                            match iterator.next() {
+                                Some(value) => {
+                                    difficulty = match value.trim().parse() {
+                                        Ok(num) => {
+                                            if num >= 1 && num <= 10 {
+                                                num
+                                            } else {
+                                                return Err("Error parsing argument: -t must be between 1 and 10")
+                                            }
+                                        },
+                                        Err(_) => return Err("Error parsing argument: invalid argument"),
+                                    };
+                                },
+                                None => return Err("Error parsing argument: Not enough argument")
+                            }
+                        } else 
+                        if arg == "-w" || arg == "--wait" {
+                            match iterator.next() {
+                                Some(value) => {
+                                    wait = match value.trim().parse() {
+                                        Ok(num) => {
+                                            if num <= 8 {
+                                                num
+                                            } else {
+                                                return Err("Error parsing argument: -t must be between 1 and 10")
+                                            }
+                                        },
+                                        Err(_) => return Err("Error parsing argument: invalid argument"),
+                                    };
+                                },
+                                None => return Err("Error parsing argument: Not enough argument")
+                            }
+                        } else 
+                        // if arg == "-n" || arg == "--notes" {
+                        //     match iterator.next() {
+                        //         Some(value) => {
+                        //             notes = match value.trim().parse() {
+                        //                 Ok(num) => num,
+                        //                 Err(_) => return Err("Error parsing argument: invalid argument"),
+                        //             };
+                        //         },
+                        //         None => return Err("Error parsing argument: Not enough argument")
+                        //     }
+                        // } else 
+                        if arg == "-a" || arg == "--ascii" {
+                            ascii = true;
+                        } else 
+                        if arg == "-s" || arg == "--series" {
+                            match iterator.next() {
+                                Some(value) => {
+                                    series = match value.trim().parse() {
+                                        Ok(num) => num,
+                                        Err(_) => return Err("Error parsing argument: invalid argument"),
+                                    };
+                                },
+                                None => return Err("Error parsing argument: Not enough argument")
+                            }
+                        } else 
+                        if arg == "-m" || arg == "--measure" {
+                            match iterator.next() {
+                                Some(value) => {
+                                    measures = match value.trim().parse() {
+                                        Ok(num) => {
+                                            if num >= 1 && num <= 8 {
+                                                num
+                                            } else {
+                                                return Err("Error parsing argument: -t must be between 1 and 8")
+                                            }
+                                        },
+                                        Err(_) => return Err("Error parsing argument: invalid argument"),
+                                    };
+                                },
+                                None => return Err("Error parsing argument: Not enough argument")
+                            }
+                        } else 
+                        if arg == "-T" || arg == "--time" {
+                            match iterator.next() {
+                                Some(value) => {
+                                    time_per_measures = match value.trim().parse() {
+                                        Ok(num) => {
+                                            if num >= 1 && num <= 8 {
+                                                num
+                                            } else {
+                                                return Err("Error parsing argument: -t must be between 1 and 8")
+                                            }
+                                        },
+                                        Err(_) => return Err("Error parsing argument: invalid argument"),
+                                    };
+                                },
+                                None => return Err("Error parsing argument: Not enough argument")
+                            }
+                        } else {
+                            return Err("Error parsing argument: invalid argument")
+                        }
+                    }
+                    None => break  
+                }
+            }
+        }
+
+        println!("-> {}\n-> {}\n-> {}\n-> {:?}\n-> {}\n-> {}\n-> {}\n-> {}\n",
+            tempo, difficulty, wait, notes, ascii, series, measures, time_per_measures);
+        Ok(Config{tempo, difficulty, wait, notes, ascii, series, measures, time_per_measures}) 
+    }
+}
 
 
 
@@ -237,5 +395,6 @@ mod tests {
         let mut oc = OcTable::new(0.01);
         assert!(oc.run().is_ok());
     }
+
 }
 
