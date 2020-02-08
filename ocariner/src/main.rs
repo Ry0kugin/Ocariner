@@ -8,8 +8,7 @@ fn main() {
         process::exit(1);
     });
 
-    let mut oc = OcTable::new(0.7);
-    if let Err(e) = oc.run() {
+    if let Err(e) = run(config) {
         eprintln!("ERROR in OcTable structure: {}", e);
         process::exit(1);
     }    
